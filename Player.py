@@ -12,6 +12,12 @@ import math
 import sys
 sys.path.append('..')
 
+# Import obj loader
+from objloader import *
+
+#Radio para colisión
+radius = 2
+
 screen_width = 800
 screen_height = 800
 # Campo visual para el observador
@@ -41,6 +47,9 @@ Z_MIN = -500
 Z_MAX = 500
 # Dimension del plano
 DimBoard = 200
+
+objetos = []
+
 # Variable de control observador - Cambia cómo ve el usuario
 dir = [1.0, 0.0, 0.0]
 
@@ -77,7 +86,7 @@ def Axis():
 def Init():
     screen = pygame.display.set_mode(
         (screen_width, screen_height), DOUBLEBUF | OPENGL)
-    pygame.display.set_caption("OpenGL: cubos")
+    pygame.display.set_caption("Chase: Take a Chance")
 
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
@@ -89,6 +98,17 @@ def Init():
     glClearColor(0, 0, 0, 0)
     glEnable(GL_DEPTH_TEST)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+    
+    #glLightfv(GL_LIGHT0, GL_POSITION,  (-40, 200, 100, 0.0))
+    glLightfv(GL_LIGHT0, GL_POSITION,  (0, 200, 0, 0.0))
+    glLightfv(GL_LIGHT0, GL_AMBIENT, (0.5, 0.5, 0.5, 1.0))
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, (0.5, 0.5, 0.5, 1.0))
+    glEnable(GL_LIGHTING)
+    glEnable(GL_LIGHT0)
+    glEnable(GL_COLOR_MATERIAL)
+    glShadeModel(GL_SMOOTH)           # most obj files expect to be smooth-shaded        
+    objetos.append(OBJ("School_map.obj", swapyz=True))
+    objetos[0].generate()
 
 
 def lookAt():
@@ -101,6 +121,15 @@ def lookAt():
     dir[2] = math.sin(rad)
     # 3. Center recibe la operación de Eye + Dir
 
+def displayobj():
+    glPushMatrix()  
+    #correcciones para dibujar el objeto en plano XZ
+    #esto depende de cada objeto
+    glRotatef(-90.0, 1.0, 0.0, 0.0)
+    glTranslatef(0.0, 0.0, 15.0)
+    glScale(10.0,10.0,10.0)
+    objetos[0].render()  
+    glPopMatrix()
 
 def display():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -113,6 +142,8 @@ def display():
     glVertex3d(DimBoard, 0, DimBoard)
     glVertex3d(DimBoard, 0, -DimBoard)
     glEnd()
+    
+    displayobj()
     
 done = False
 Init()
