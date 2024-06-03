@@ -7,6 +7,19 @@ import math
 import sys
 sys.path.append('..')
 
+<<<<<<< Updated upstream
+=======
+# Import obj loader
+from objloader import *
+
+#Radio para colisión
+radius = 2
+
+#Centro de masa
+MCx = 0
+MCz = 0
+
+>>>>>>> Stashed changes
 screen_width = 800
 screen_height = 800
 FOVY = 60.0
@@ -30,10 +43,21 @@ Z_MAX = 500
 DimBoard = 300
 dir = [0.0, 0.0, 1.0]
 
+<<<<<<< Updated upstream
 theta = 300
 radius = 0
 player_x = 0
 player_z = 0
+=======
+objetos = []
+
+# Variable de control observador - Cambia cómo ve el usuario, Vector de Dirección
+dir = [1.0, 0.0, 0.0]
+
+# Variables para el control del observador
+theta = 0.0
+radius = 300
+>>>>>>> Stashed changes
 
 pygame.init()
 
@@ -68,9 +92,15 @@ def Init():
     gluLookAt(EYE_X, EYE_Y, EYE_Z, CENTER_X, CENTER_Y, CENTER_Z, UP_X, UP_Y, UP_Z)
     glClearColor(0, 0, 0, 0)
     glEnable(GL_DEPTH_TEST)
+<<<<<<< Updated upstream
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+=======
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)   
+
+>>>>>>> Stashed changes
 
 def lookAt():
+
     global dir
     global theta
     rad = math.radians(theta)
