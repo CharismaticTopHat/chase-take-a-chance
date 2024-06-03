@@ -6,6 +6,9 @@ import math
 import sys
 import csv
 
+# Import obj loader
+from objloader import *
+
 sys.path.append('..')
 
 screen_width = 800
@@ -38,8 +41,9 @@ player_z = 0
 speed = 10
 giroSpeed = 10
 
-pygame.init()
+objetos = []
 
+pygame.init()
 
 def load_map(filename):
     map_data = []
@@ -86,6 +90,8 @@ def Init():
     glClearColor(0, 0, 0, 0)
     glEnable(GL_DEPTH_TEST)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+    objetos.append(OBJ("HSpider.obj", swapyz=True))
+    objetos[0].generate()
 
 
 def lookAt():
@@ -95,9 +101,18 @@ def lookAt():
     dir[0] = math.cos(rad) * speed
     dir[2] = math.sin(rad) * speed
 
+def displayobj():
+    glPushMatrix()  
+    #correcciones para dibuj0ar el objeto en plano XZ
+    #esto depende de cada objeto
+    glRotatef(-90.0, 1.0, 0.0, 0.0)
+    glTranslatef(10.0, 10.0, 0.0)
+    glScale(0.5,0.5,0.5)
+    objetos[0].render()  
+    glPopMatrix()
 
 def prepare_wall_vertices(map_data):
-    wall_height = 30
+    wall_height = 1
     vertices = []
     for z, row in enumerate(map_data):
         for x, cell in enumerate(row):
