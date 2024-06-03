@@ -2,7 +2,6 @@ import pygame
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from OpenGL.GLUT import *
 import math
 import sys
 import csv
@@ -50,6 +49,7 @@ def load_map(filename):
             map_data.append([int(cell) for cell in row])
     return map_data
 
+
 map_data = load_map('map.csv')
 
 
@@ -73,12 +73,13 @@ def Axis():
     glEnd()
     glLineWidth(1.0)
 
+
 def Init():
     screen = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
     pygame.display.set_caption("OpenGL: cubos")
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(FOVY, screen_width/screen_height, ZNEAR, ZFAR)
+    gluPerspective(FOVY, screen_width / screen_height, ZNEAR, ZFAR)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
     gluLookAt(EYE_X, EYE_Y, EYE_Z, CENTER_X, CENTER_Y, CENTER_Z, UP_X, UP_Y, UP_Z)
@@ -86,12 +87,13 @@ def Init():
     glEnable(GL_DEPTH_TEST)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
+
 def lookAt():
     global dir
     global theta
     rad = math.radians(theta)
-    dir[0] = math.cos(rad)*speed
-    dir[2] = math.sin(rad)*speed
+    dir[0] = math.cos(rad) * speed
+    dir[2] = math.sin(rad) * speed
 
 
 def prepare_wall_vertices(map_data):
@@ -102,19 +104,21 @@ def prepare_wall_vertices(map_data):
             if cell == 1:
                 vertices.extend([
                     # Frente
-                    (x, 0, z), (x+1, 0, z), (x+1, wall_height, z), (x, wall_height, z),
+                    (x, 0, z), (x + 1, 0, z), (x + 1, wall_height, z), (x, wall_height, z),
                     # Atrás
-                    (x, 0, z+1), (x+1, 0, z+1), (x+1, wall_height, z+1), (x, wall_height, z+1),
+                    (x, 0, z + 1), (x + 1, 0, z + 1), (x + 1, wall_height, z + 1), (x, wall_height, z + 1),
                     # Izquierda
-                    (x, 0, z), (x, 0, z+1), (x, wall_height, z+1), (x, wall_height, z),
+                    (x, 0, z), (x, 0, z + 1), (x, wall_height, z + 1), (x, wall_height, z),
                     # Derecha
-                    (x+1, 0, z), (x+1, 0, z+1), (x+1, wall_height, z+1), (x+1, wall_height, z),
+                    (x + 1, 0, z), (x + 1, 0, z + 1), (x + 1, wall_height, z + 1), (x + 1, wall_height, z),
                     # Arriba
-                    (x, wall_height, z), (x+1, wall_height, z), (x+1, wall_height, z+1), (x, wall_height, z+1),
+                    (x, wall_height, z), (x + 1, wall_height, z), (x + 1, wall_height, z + 1), (x, wall_height, z + 1),
                 ])
     return vertices
 
+
 wall_vertices = prepare_wall_vertices(map_data)
+
 
 def draw_walls(vertices):
     glColor3f(1.0, 1.0, 1.0)
@@ -122,6 +126,20 @@ def draw_walls(vertices):
     for vertex in vertices:
         glVertex3f(*vertex)
     glEnd()
+
+
+def is_collision(new_x, new_z):
+    player_size = 3
+    min_x, max_x = int(new_x - player_size), int(new_x + player_size)
+    min_z, max_z = int(new_z - player_size), int(new_z + player_size)
+
+    for x in range(min_x, max_x + 1):
+        for z in range(min_z, max_z + 1):
+            if x < 0 or x >= len(map_data[0]) or z < 0 or z >= len(map_data):
+                return True  # Está fuera del mapa
+            if map_data[z][x] == 1:  # Verifica si la celda es una pared
+                return True
+    return False
 
 
 def display():
@@ -143,36 +161,26 @@ done = False
 Init()
 while not done:
     keys = pygame.key.get_pressed()
+    new_eye_x, new_eye_z = EYE_X, EYE_Z
     if keys[pygame.K_UP]:
-        EYE_X += dir[0]
-        EYE_Z += dir[2]
-        CENTER_X = EYE_X + dir[0]
-        CENTER_Z = EYE_Z + dir[2]
-        player_x = int(EYE_X)
-        player_z = int(EYE_Z)
-        glLoadIdentity()
-        gluLookAt(EYE_X, EYE_Y, EYE_Z, CENTER_X, CENTER_Y, CENTER_Z, UP_X, UP_Y, UP_Z)
+        new_eye_x += dir[0]
+        new_eye_z += dir[2]
     if keys[pygame.K_DOWN]:
-        EYE_X -= dir[0]
-        EYE_Z -= dir[2]
-        CENTER_X = EYE_X + dir[0]
-        CENTER_Z = EYE_Z + dir[2]
-        player_x = int(EYE_X)
-        player_z = int(EYE_Z)
-        glLoadIdentity()
-        gluLookAt(EYE_X, EYE_Y, EYE_Z, CENTER_X, CENTER_Y, CENTER_Z, UP_X, UP_Y, UP_Z)
+        new_eye_x -= dir[0]
+        new_eye_z -= dir[2]
     if keys[pygame.K_RIGHT]:
         theta += giroSpeed
         lookAt()
-        CENTER_X = EYE_X + dir[0]
-        CENTER_Z = EYE_Z + dir[2]
-        glLoadIdentity()
-        gluLookAt(EYE_X, EYE_Y, EYE_Z, CENTER_X, CENTER_Y, CENTER_Z, UP_X, UP_Y, UP_Z)
     if keys[pygame.K_LEFT]:
         theta -= giroSpeed
         lookAt()
+
+    if not is_collision(new_eye_x, new_eye_z):
+        EYE_X, EYE_Z = new_eye_x, new_eye_z
         CENTER_X = EYE_X + dir[0]
         CENTER_Z = EYE_Z + dir[2]
+        player_x = int(EYE_X)
+        player_z = int(EYE_Z)
         glLoadIdentity()
         gluLookAt(EYE_X, EYE_Y, EYE_Z, CENTER_X, CENTER_Y, CENTER_Z, UP_X, UP_Y, UP_Z)
 
