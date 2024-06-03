@@ -37,6 +37,7 @@ radius = 0
 player_x = 0
 player_z = 0
 speed = 10
+giroSpeed = 10
 
 pygame.init()
 
@@ -161,14 +162,14 @@ while not done:
         glLoadIdentity()
         gluLookAt(EYE_X, EYE_Y, EYE_Z, CENTER_X, CENTER_Y, CENTER_Z, UP_X, UP_Y, UP_Z)
     if keys[pygame.K_RIGHT]:
-        theta += 10
+        theta += giroSpeed
         lookAt()
         CENTER_X = EYE_X + dir[0]
         CENTER_Z = EYE_Z + dir[2]
         glLoadIdentity()
         gluLookAt(EYE_X, EYE_Y, EYE_Z, CENTER_X, CENTER_Y, CENTER_Z, UP_X, UP_Y, UP_Z)
     if keys[pygame.K_LEFT]:
-        theta -= 10
+        theta -= giroSpeed
         lookAt()
         CENTER_X = EYE_X + dir[0]
         CENTER_Z = EYE_Z + dir[2]
