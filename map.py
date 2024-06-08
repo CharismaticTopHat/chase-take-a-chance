@@ -2,12 +2,16 @@ import pygame
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
+from OpenGL.GLUT import *
+
 import math
 import sys
 import csv
+import ctypes
 
 # Import obj loader
 from objloader import *
+from Enemy import Enemy
 
 sys.path.append('..')
 
@@ -35,13 +39,15 @@ DimBoard = 600
 dir = [0.0, 0.0, 1.0]
 
 theta = 300
-radius = 0
+playerSize = 5
 player_x = 0
 player_z = 0
 speed = 10
 giroSpeed = 10
 
 objetos = []
+
+GLUT_BITMAP_TIMES_ROMAN_24 = ctypes.c_int(7)
 
 pygame.init()
 
@@ -80,7 +86,7 @@ def Axis():
 
 def Init():
     screen = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
-    pygame.display.set_caption("OpenGL: cubos")
+    pygame.display.set_caption("Chase: Take A Chance")
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     gluPerspective(FOVY, screen_width / screen_height, ZNEAR, ZFAR)
@@ -93,7 +99,6 @@ def Init():
     objetos.append(OBJ("HSpider.obj", swapyz=True))
     objetos[0].generate()
 
-
 def lookAt():
     global dir
     global theta
@@ -101,15 +106,25 @@ def lookAt():
     dir[0] = math.cos(rad) * speed
     dir[2] = math.sin(rad) * speed
 
+enemy_instance = Enemy(dim=600, vel=0.05, Scale=0.5, size = 50)
+
 def displayobj():
     glPushMatrix()  
     #correcciones para dibuj0ar el objeto en plano XZ
     #esto depende de cada objeto
     glRotatef(-90.0, 1.0, 0.0, 0.0)
-    glTranslatef(10.0, 10.0, 0.0)
+    glTranslatef(enemy_instance.Position[0], enemy_instance.Position[1], enemy_instance.Position[2])
     glScale(0.5,0.5,0.5)
     objetos[0].render()  
     glPopMatrix()
+
+def checkCollision():
+    euclidesDistance = math.sqrt(math.pow(player_x-enemy_instance.Position[0], 2)+math.pow(0-0,2)+math.pow(player_z-enemy_instance.Position[2]))
+    radioDistance = playerSize + enemy_instance.size
+    if euclidesDistance < radioDistance:
+        is_collision = True
+    else:
+        is_collision = False
 
 def prepare_wall_vertices(map_data):
     wall_height = 1
@@ -144,9 +159,9 @@ def draw_walls(vertices):
 
 
 def is_collision(new_x, new_z):
-    player_size = 3
-    min_x, max_x = int(new_x - player_size), int(new_x + player_size)
-    min_z, max_z = int(new_z - player_size), int(new_z + player_size)
+    global playerSize
+    min_x, max_x = int(new_x - playerSize), int(new_x + playerSize)
+    min_z, max_z = int(new_z - playerSize), int(new_z + playerSize)
 
     for x in range(min_x, max_x + 1):
         for z in range(min_z, max_z + 1):
@@ -156,6 +171,9 @@ def is_collision(new_x, new_z):
                 return True
     return False
 
+def is_collision_with_enemy(player_x, player_z):
+    euclidean_distance = math.sqrt((player_x - enemy_instance.MassCenter[0]) ** 2 + (player_z - enemy_instance.MassCenter[1]) ** 2)
+    return euclidean_distance < (playerSize + enemy_instance.size)
 
 def display():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -170,7 +188,33 @@ def display():
     draw_walls(wall_vertices)  # Llamada a la función para dibujar las paredes
     print(f"La posición en x es: {player_x}")
     print(f"La posición en z es: {player_z}")
+    displayobj()
 
+    if is_collision_with_enemy(player_x, player_z):
+        show_game_over_message()
+
+def show_game_over_message():
+    glMatrixMode(GL_PROJECTION)
+    glPushMatrix()
+    glLoadIdentity()
+    gluOrtho2D(0, screen_width, 0, screen_height)
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
+    glColor3f(1.0, 0.0, 0.0)  
+    glRasterPos2i(screen_width // 2 - 50, screen_height // 2)
+    message = "Game Over"  
+    x = screen_width // 2 - 50  # Initial x position
+    y = screen_height // 2      # Initial y position
+    for char in message:
+        glRasterPos2i(x, y)
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, ctypes.c_int(ord(char)))
+        # Update x position for next character
+        x += glutBitmapWidth(GLUT_BITMAP_TIMES_ROMAN_24, ctypes.c_int(ord(char)))
+    glPopMatrix()
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
 
 done = False
 Init()
