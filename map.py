@@ -13,6 +13,7 @@ import time
 # Import obj loader
 from objloader import *
 from Enemy import Enemy
+from Collectable import Coin
 
 sys.path.append('..')
 
@@ -46,7 +47,12 @@ player_z = 0
 speed = 10
 giroSpeed = 10
 
+collectedItems = 3
+
 objetos = []
+
+coin_locations = [[225,-227], [225, -327], [225,-427], [275,-227], [275,-327],[275,-427]]
+coins = [Coin(Scale=1.0, locations=coin_locations) for _ in range(3)]
 
 GLUT_BITMAP_TIMES_ROMAN_24 = ctypes.c_int(7)
 
@@ -99,6 +105,8 @@ def Init():
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
     objetos.append(OBJ("HSpider.obj", swapyz=True))
     objetos[0].generate()
+    for i in range(0,3):
+        objetos.append(OBJ("Coin.obj", swapyz=True))
 
 def lookAt():
     global dir
@@ -107,7 +115,7 @@ def lookAt():
     dir[0] = math.cos(rad) * speed
     dir[2] = math.sin(rad) * speed
 
-enemy_instance = Enemy(dim=600, vel=0.05, Scale=0.5, size = 50)
+enemy_instance = Enemy(dim=600, vel=0.05, Scale=0.5)
 
 def displayobj():
     glPushMatrix()  
@@ -177,6 +185,7 @@ def is_collision_with_enemy(player_x, player_z):
     return euclidean_distance < (playerSize + enemy_instance.size)
 
 def display():
+    global collectedItems
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     Axis()
     glColor3f(0.3, 0.3, 0.3)
@@ -191,10 +200,57 @@ def display():
     print(f"JUGADOR en z es: {player_z}")
     print(f"ENEMIGO en x es: {enemy_instance.MassCenter[0]}")
     print(f"ENEMIGO en z es: {abs(enemy_instance.MassCenter[1])}")
+    for i, coin in enumerate(coins):
+        print(f"COIN {i} en x es: {coin.MassCenter[0]}")
+        print(f"COIN {i} en z es: {coin.MassCenter[1]}")
     displayobj()
+
+    for i, coin in enumerate(coins):
+        glPushMatrix()  
+        glRotatef(-90.0, 1.0, 0.0, 0.0)
+        glTranslatef(coin.Position[0], coin.Position[1], coin.Position[2])
+        glScale(0.5, 0.5, 0.5)
+        objetos[i + 1].render()
+        glPopMatrix()
 
     if is_collision_with_enemy(player_x, player_z):
         show_game_over_message()
+    if is_collision_with_coins(player_x, player_z):
+        collectedItems -= 1  # Decrement collectedItems
+        if collectedItems == 0:
+            show_you_win_message()
+
+def is_collision_with_coins(player_x, player_z):
+    global collectedItems  
+    for coin in coins:
+        euclidean_distance = math.sqrt((player_x - coin.MassCenter[0]) ** 2 + (player_z - abs(coin.MassCenter[1])) ** 2)
+        if euclidean_distance < (playerSize + coin.size):
+            coins.remove(coin)
+            return True
+    return False
+
+def show_you_win_message():
+    glMatrixMode(GL_PROJECTION)
+    glPushMatrix()
+    glLoadIdentity()
+    gluOrtho2D(0, screen_width, 0, screen_height)
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
+    glColor3f(0.0, 1.0, 0.0)  
+    glRasterPos2i(screen_width // 2 - 70, screen_height // 2)
+    message = "You win!"  
+    x = screen_width // 2 - 70  
+    y = screen_height // 2      
+    for char in message:
+        glRasterPos2i(x, y)
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, ctypes.c_int(ord(char)))
+        # Update x position for next character
+        x += glutBitmapWidth(GLUT_BITMAP_TIMES_ROMAN_24, ctypes.c_int(ord(char)))
+    glPopMatrix()
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
 
 def show_game_over_message():
     glMatrixMode(GL_PROJECTION)

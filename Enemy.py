@@ -18,7 +18,7 @@ CSV_FILE = os.path.join(BASE_PATH, 'map.csv')
 matrix = np.array(pd.io.parsers.read_csv(CSV_FILE, header=None)).astype("int")
 class Enemy:
     
-    def __init__(self, dim, vel, Scale, size):
+    def __init__(self, dim, vel, Scale):
         self.scale = Scale
         self.radio = math.sqrt(self.scale*self.scale + self.scale*self.scale)
         self.DimBoard = dim
@@ -46,8 +46,7 @@ class Enemy:
         self.MassCenter.append(self.Position[0])
         self.MassCenter.append(self.Position[1])
         #Radio de colisión
-        self.size = size
-
+        self.size = 16
 
     def update(self):
         new_x = self.Position[0] + self.Direction[0]
@@ -66,11 +65,3 @@ class Enemy:
         else:
             self.Direction[2] *= -1.0
             self.Position[2] += self.Direction[2]
-    
-    def draw(self):
-        glPushMatrix()
-        glTranslatef(self.Position[0], self.Position[1], self.Position[2])
-        glScaled(self.scale,self.scale,self.scale)
-        glColor3f(1.0, 1.0, 1.0)
-        self.drawFaces()
-        glPopMatrix()
