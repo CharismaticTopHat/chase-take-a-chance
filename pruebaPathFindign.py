@@ -7,20 +7,11 @@ import numpy as np
 import pandas as pd
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
-CSV_FILE = os.path.join(BASE_PATH, 'csv_file.csv')
+CSV_FILE = os.path.join(BASE_PATH, 'map.csv')
 
 path = []
 grid = []
 
-# navigation map
-
-matrix = [
-    [1, 1, 0, 1, 1],
-    [1, 0, 1, 0, 1],
-    [1, 1, 1, 0, 1],
-    [1, 0, 1, 1, 1],
-    [1, 1, 1, 0, 1]
-]
 
 def finding(matrix, nstart, nend):
     global path
@@ -35,15 +26,15 @@ def finding(matrix, nstart, nend):
     # returns a list with the path and the amount of times the finder had to run to get the path
     path, runs = finder.find_path(start, end, grid)
 
-
-# main program ---------------------------------------
-finding(matrix, (0, 0), (4,4))
+# reading a csv file
+matrix2 = np.array(pd.io.parsers.read_csv(CSV_FILE, header=None)).astype("int")
+print(matrix2)
+finding(matrix2, (1,1), (468,257))
 # print result
 for point in path:
     x = point.x
     y = point.y
     print(x, " ", y)
-
 
 
 
