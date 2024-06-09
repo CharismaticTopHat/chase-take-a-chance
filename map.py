@@ -8,6 +8,7 @@ import math
 import sys
 import csv
 import ctypes
+import time
 
 # Import obj loader
 from objloader import *
@@ -172,7 +173,7 @@ def is_collision(new_x, new_z):
     return False
 
 def is_collision_with_enemy(player_x, player_z):
-    euclidean_distance = math.sqrt((player_x - enemy_instance.MassCenter[0]) ** 2 + (player_z - enemy_instance.MassCenter[1]) ** 2)
+    euclidean_distance = math.sqrt((player_x - enemy_instance.MassCenter[0]) ** 2 + (player_z - abs(enemy_instance.MassCenter[1])) ** 2)
     return euclidean_distance < (playerSize + enemy_instance.size)
 
 def display():
@@ -186,8 +187,10 @@ def display():
     glVertex3d(DimBoard, 0, -DimBoard)
     glEnd()
     draw_walls(wall_vertices)  # Llamada a la función para dibujar las paredes
-    print(f"La posición en x es: {player_x}")
-    print(f"La posición en z es: {player_z}")
+    print(f"JUGADOR en x es: {player_x}")
+    print(f"JUGADOR en z es: {player_z}")
+    print(f"ENEMIGO en x es: {enemy_instance.MassCenter[0]}")
+    print(f"ENEMIGO en z es: {abs(enemy_instance.MassCenter[1])}")
     displayobj()
 
     if is_collision_with_enemy(player_x, player_z):

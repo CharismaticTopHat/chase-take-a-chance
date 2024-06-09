@@ -44,7 +44,7 @@ class Enemy:
         #Centro de masa
         self.MassCenter = []
         self.MassCenter.append(self.Position[0])
-        self.MassCenter.append(self.Position[2])
+        self.MassCenter.append(self.Position[1])
         #Radio de colisión
         self.size = size
 
