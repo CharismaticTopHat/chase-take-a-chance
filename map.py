@@ -198,6 +198,7 @@ def display():
     glVertex3d(DimBoard, 0, -DimBoard)
     glEnd()
     draw_walls(wall_vertices)
+    print("borren este print porfa")
     print(f"JUGADOR en x es: {player_x}")
     print(f"JUGADOR en z es: {player_z}")
     print(f"ENEMIGO en x es: {abs(enemy_instance.MassCenter[0])}")
