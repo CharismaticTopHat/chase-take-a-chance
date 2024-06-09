@@ -115,7 +115,7 @@ def lookAt():
     dir[0] = math.cos(rad) * speed
     dir[2] = math.sin(rad) * speed
 
-enemy_instance = Enemy(dim=600, vel=0.05, Scale=0.5)
+enemy_instance = Enemy(vel=5, Scale=0.5)
 
 def displayobj():
     glPushMatrix()  
@@ -140,7 +140,7 @@ def prepare_wall_vertices(map_data):
     vertices = []
     for z, row in enumerate(map_data):
         for x, cell in enumerate(row):
-            if cell == 1:
+            if cell == 0:  # Cambiar a 0 para indicar paredes
                 vertices.extend([
                     # Frente
                     (x, 0, z), (x + 1, 0, z), (x + 1, wall_height, z), (x, wall_height, z),
@@ -154,6 +154,7 @@ def prepare_wall_vertices(map_data):
                     (x, wall_height, z), (x + 1, wall_height, z), (x + 1, wall_height, z + 1), (x, wall_height, z + 1),
                 ])
     return vertices
+
 
 
 wall_vertices = prepare_wall_vertices(map_data)
@@ -176,9 +177,10 @@ def is_collision(new_x, new_z):
         for z in range(min_z, max_z + 1):
             if x < 0 or x >= len(map_data[0]) or z < 0 or z >= len(map_data):
                 return True  # Está fuera del mapa
-            if map_data[z][x] == 1:  # Verifica si la celda es una pared
+            if map_data[z][x] == 0:  # Verifica si la celda es una pared
                 return True
     return False
+
 
 def is_collision_with_enemy(player_x, player_z):
     euclidean_distance = math.sqrt((player_x - enemy_instance.MassCenter[0]) ** 2 + (player_z - abs(enemy_instance.MassCenter[1])) ** 2)
@@ -195,14 +197,15 @@ def display():
     glVertex3d(DimBoard, 0, DimBoard)
     glVertex3d(DimBoard, 0, -DimBoard)
     glEnd()
-    draw_walls(wall_vertices)  # Llamada a la función para dibujar las paredes
+    draw_walls(wall_vertices)
     print(f"JUGADOR en x es: {player_x}")
     print(f"JUGADOR en z es: {player_z}")
-    print(f"ENEMIGO en x es: {enemy_instance.MassCenter[0]}")
+    print(f"ENEMIGO en x es: {abs(enemy_instance.MassCenter[0])}")
     print(f"ENEMIGO en z es: {abs(enemy_instance.MassCenter[1])}")
     for i, coin in enumerate(coins):
         print(f"COIN {i} en x es: {coin.MassCenter[0]}")
         print(f"COIN {i} en z es: {coin.MassCenter[1]}")
+    enemy_instance.update()
     displayobj()
 
     for i, coin in enumerate(coins):
@@ -216,7 +219,7 @@ def display():
     if is_collision_with_enemy(player_x, player_z):
         show_game_over_message()
     if is_collision_with_coins(player_x, player_z):
-        collectedItems -= 1  # Decrement collectedItems
+        collectedItems -= 1
         if collectedItems == 0:
             show_you_win_message()
 
