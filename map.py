@@ -113,7 +113,7 @@ def lookAt():
 
 enemyStart = (30, 30)
 enemyEnd = (400, 310)
-enemy_instance = Enemy(vel=1, Scale=0.5, start=enemyStart, end=enemyEnd)
+enemy_instance = Enemy(vel=5, Scale=0.5, start=enemyStart, end=enemyEnd)
 
 def displayobj():
     glPushMatrix()
