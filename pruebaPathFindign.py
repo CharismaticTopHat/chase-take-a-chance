@@ -29,7 +29,7 @@ def finding(matrix, nstart, nend):
 # reading a csv file
 matrix2 = np.array(pd.io.parsers.read_csv(CSV_FILE, header=None)).astype("int")
 print(matrix2)
-finding(matrix2, (1,1), (468,257))
+finding(matrix2, (400,310), (10,10))
 # print result
 for point in path:
     x = point.x

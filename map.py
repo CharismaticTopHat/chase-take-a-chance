@@ -5,7 +5,6 @@ from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
 import math
-import sys
 import csv
 import ctypes
 import time
@@ -22,9 +21,9 @@ screen_height = 800
 FOVY = 60.0
 ZNEAR = 1.0
 ZFAR = 900.0
-EYE_X = 100
+EYE_X = 400
 EYE_Y = 15
-EYE_Z = 100
+EYE_Z = 310
 CENTER_X = 1.0
 CENTER_Y = 15
 CENTER_Z = 0.0
@@ -51,7 +50,7 @@ collectedItems = 3
 
 objetos = []
 
-coin_locations = [[225,-227], [225, -327], [225,-427], [275,-227], [275,-327],[275,-427]]
+coin_locations = [[225, -227], [225, -327], [225, -427], [275, -227], [275, -327], [275, -427]]
 coins = [Coin(Scale=1.0, locations=coin_locations) for _ in range(3)]
 
 GLUT_BITMAP_TIMES_ROMAN_24 = ctypes.c_int(7)
@@ -66,9 +65,7 @@ def load_map(filename):
             map_data.append([int(cell) for cell in row])
     return map_data
 
-
 map_data = load_map('map.csv')
-
 
 def Axis():
     glShadeModel(GL_FLAT)
@@ -90,7 +87,6 @@ def Axis():
     glEnd()
     glLineWidth(1.0)
 
-
 def Init():
     screen = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
     pygame.display.set_caption("Chase: Take A Chance")
@@ -105,7 +101,7 @@ def Init():
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
     objetos.append(OBJ("HSpider.obj", swapyz=True))
     objetos[0].generate()
-    for i in range(0,3):
+    for i in range(0, 3):
         objetos.append(OBJ("Coin.obj", swapyz=True))
 
 def lookAt():
@@ -115,20 +111,22 @@ def lookAt():
     dir[0] = math.cos(rad) * speed
     dir[2] = math.sin(rad) * speed
 
-enemy_instance = Enemy(vel=5, Scale=0.5)
+enemyStart = (30, 30)
+enemyEnd = (400, 310)
+enemy_instance = Enemy(vel=1, Scale=0.5, start=enemyStart, end=enemyEnd)
 
 def displayobj():
-    glPushMatrix()  
-    #correcciones para dibuj0ar el objeto en plano XZ
-    #esto depende de cada objeto
+    glPushMatrix()
+    # correcciones para dibujar el objeto en plano XZ
+    # esto depende de cada objeto
     glRotatef(-90.0, 1.0, 0.0, 0.0)
-    glTranslatef(enemy_instance.Position[0], enemy_instance.Position[1], enemy_instance.Position[2])
-    glScale(0.5,0.5,0.5)
-    objetos[0].render()  
+    glTranslatef(enemy_instance.Position[0], -enemy_instance.Position[1], enemy_instance.Position[2])
+    glScale(0.5, 0.5, 0.5)
+    objetos[0].render()
     glPopMatrix()
 
 def checkCollision():
-    euclidesDistance = math.sqrt(math.pow(player_x-enemy_instance.Position[0], 2)+math.pow(0-0,2)+math.pow(player_z-enemy_instance.Position[2]))
+    euclidesDistance = math.sqrt(math.pow(player_x - enemy_instance.Position[0], 2) + math.pow(0 - 0, 2) + math.pow(player_z - enemy_instance.Position[2]))
     radioDistance = playerSize + enemy_instance.size
     if euclidesDistance < radioDistance:
         is_collision = True
@@ -155,10 +153,7 @@ def prepare_wall_vertices(map_data):
                 ])
     return vertices
 
-
-
 wall_vertices = prepare_wall_vertices(map_data)
-
 
 def draw_walls(vertices):
     glColor3f(1.0, 1.0, 1.0)
@@ -166,7 +161,6 @@ def draw_walls(vertices):
     for vertex in vertices:
         glVertex3f(*vertex)
     glEnd()
-
 
 def is_collision(new_x, new_z):
     global playerSize
@@ -180,7 +174,6 @@ def is_collision(new_x, new_z):
             if map_data[z][x] == 0:  # Verifica si la celda es una pared
                 return True
     return False
-
 
 def is_collision_with_enemy(player_x, player_z):
     euclidean_distance = math.sqrt((player_x - enemy_instance.MassCenter[0]) ** 2 + (player_z - abs(enemy_instance.MassCenter[1])) ** 2)
@@ -198,19 +191,18 @@ def display():
     glVertex3d(DimBoard, 0, -DimBoard)
     glEnd()
     draw_walls(wall_vertices)
-    print("borren este print porfa")
     print(f"JUGADOR en x es: {player_x}")
     print(f"JUGADOR en z es: {player_z}")
-    print(f"ENEMIGO en x es: {abs(enemy_instance.MassCenter[0])}")
-    print(f"ENEMIGO en z es: {abs(enemy_instance.MassCenter[1])}")
-    for i, coin in enumerate(coins):
-        print(f"COIN {i} en x es: {coin.MassCenter[0]}")
-        print(f"COIN {i} en z es: {coin.MassCenter[1]}")
-    enemy_instance.update()
+    print(f"ENEMIGO en x es: {int(enemy_instance.Position[0])}")
+    print(f"ENEMIGO en z es: {int(enemy_instance.Position[1])}")
+    #for i, coin in enumerate(coins):
+     #   print(f"COIN {i} en x es: {coin.MassCenter[0]}")
+      #  print(f"COIN {i} en z es: {coin.MassCenter[1]}")
+    enemy_instance.update(new_end=(int(player_x), int(player_z)))
     displayobj()
 
     for i, coin in enumerate(coins):
-        glPushMatrix()  
+        glPushMatrix()
         glRotatef(-90.0, 1.0, 0.0, 0.0)
         glTranslatef(coin.Position[0], coin.Position[1], coin.Position[2])
         glScale(0.5, 0.5, 0.5)
@@ -225,7 +217,7 @@ def display():
             show_you_win_message()
 
 def is_collision_with_coins(player_x, player_z):
-    global collectedItems  
+    global collectedItems
     for coin in coins:
         euclidean_distance = math.sqrt((player_x - coin.MassCenter[0]) ** 2 + (player_z - abs(coin.MassCenter[1])) ** 2)
         if euclidean_distance < (playerSize + coin.size):
@@ -240,15 +232,14 @@ def show_you_win_message():
     gluOrtho2D(0, screen_width, 0, screen_height)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    glColor3f(0.0, 1.0, 0.0)  
+    glColor3f(0.0, 1.0, 0.0)
     glRasterPos2i(screen_width // 2 - 70, screen_height // 2)
-    message = "You win!"  
-    x = screen_width // 2 - 70  
-    y = screen_height // 2      
+    message = "You win!"
+    x = screen_width // 2 - 70
+    y = screen_height // 2
     for char in message:
         glRasterPos2i(x, y)
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, ctypes.c_int(ord(char)))
-        # Update x position for next character
         x += glutBitmapWidth(GLUT_BITMAP_TIMES_ROMAN_24, ctypes.c_int(ord(char)))
     glPopMatrix()
     glMatrixMode(GL_PROJECTION)
@@ -263,15 +254,14 @@ def show_game_over_message():
     gluOrtho2D(0, screen_width, 0, screen_height)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    glColor3f(1.0, 0.0, 0.0)  
+    glColor3f(1.0, 0.0, 0.0)
     glRasterPos2i(screen_width // 2 - 50, screen_height // 2)
-    message = "Game Over"  
-    x = screen_width // 2 - 50  # Initial x position
-    y = screen_height // 2      # Initial y position
+    message = "Game Over"
+    x = screen_width // 2 - 50
+    y = screen_height // 2
     for char in message:
         glRasterPos2i(x, y)
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, ctypes.c_int(ord(char)))
-        # Update x position for next character
         x += glutBitmapWidth(GLUT_BITMAP_TIMES_ROMAN_24, ctypes.c_int(ord(char)))
     glPopMatrix()
     glMatrixMode(GL_PROJECTION)
