@@ -63,12 +63,10 @@ class Enemy:
 
             self.move_count += 1
 
-            # Si el enemigo se mueve muy poco durante varios ciclos, recalcular la ruta
             if self.move_count >= 50 or (distance < 0.1 and self.move_count >= 10):
                 self.path = self.calculate_path((self.Position[0], self.Position[1]), new_end)
                 self.path_index = 0
                 self.move_count = 0
         else:
-            # Si el enemigo llega al final de la ruta, recalcular la ruta
             self.path = self.calculate_path((self.Position[0], self.Position[1]), new_end)
             self.path_index = 0
