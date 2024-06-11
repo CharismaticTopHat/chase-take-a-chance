@@ -113,7 +113,7 @@ def lookAt():
 
 enemyStart = (30, 30)
 enemyEnd = (400, 310)
-enemy_instance = Enemy(vel=4, Scale=0.5, start=enemyStart, end=enemyEnd)
+enemy_instance = Enemy(vel=1, Scale=0.5, start=enemyStart, end=enemyEnd)
 
 def displayobj():
     glPushMatrix()
@@ -218,10 +218,13 @@ def display():
 
 def is_collision_with_coins(player_x, player_z):
     global collectedItems
+    global speed
     for coin in coins:
         euclidean_distance = math.sqrt((player_x - coin.MassCenter[0]) ** 2 + (player_z - abs(coin.MassCenter[1])) ** 2)
         if euclidean_distance < (playerSize + coin.size):
             coins.remove(coin)
+            speed -= 3
+            enemy_instance.vel += 5
             return True
     return False
 

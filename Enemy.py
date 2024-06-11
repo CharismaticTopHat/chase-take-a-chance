@@ -70,3 +70,4 @@ class Enemy:
         else:
             self.path = self.calculate_path((self.Position[0], self.Position[1]), new_end)
             self.path_index = 0
+
