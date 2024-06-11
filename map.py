@@ -53,6 +53,9 @@ objetos = []
 coin_locations = [[225, -227], [225, -327], [225, -427], [275, -227], [275, -327], [275, -427]]
 coins = [Coin(Scale=1.0, locations=coin_locations) for _ in range(3)]
 
+pesades = 3
+ligeres = 5
+
 GLUT_BITMAP_TIMES_ROMAN_24 = ctypes.c_int(7)
 
 pygame.init()
@@ -223,8 +226,8 @@ def is_collision_with_coins(player_x, player_z):
         euclidean_distance = math.sqrt((player_x - coin.MassCenter[0]) ** 2 + (player_z - abs(coin.MassCenter[1])) ** 2)
         if euclidean_distance < (playerSize + coin.size):
             coins.remove(coin)
-            speed -= 3
-            enemy_instance.vel += 5
+            speed -= pesades
+            enemy_instance.vel += ligeres
             return True
     return False
 
