@@ -1,3 +1,4 @@
+import os
 import pygame
 from pygame.locals import *
 from OpenGL.GL import *
@@ -122,6 +123,7 @@ def Axis():
     glEnd()
     glLineWidth(1.0)
 
+screamer_played = False  # Variable para llevar el registro si el screamer ya ha sido reproducido
 
 def Init():
     global wall_texture, spider_texture
@@ -265,7 +267,7 @@ def is_collision_with_enemy(player_x, player_z):
 
 
 def display():
-    global edo_game
+    global edo_game, screamer_played, videoEnding
     if edo_game == 0:
         global collectedItems
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -299,10 +301,16 @@ def display():
             collectedItems -= 1
             if collectedItems == 0:
                 edo_game = 2
-    elif edo_game == 1:
+    elif edo_game == 1 and not screamer_played:
+        videoEnding = 'BOOGIE.mp4'
+        play_ending_video()
+        screamer_played = True
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         show_game_over_message()
-    elif edo_game == 2:
+    elif edo_game == 2 and not screamer_played:
+        videoEnding = 'BOOGIE.mp4'
+        play_ending_video()
+        screamer_played = True
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         show_you_win_message()
 
@@ -404,52 +412,69 @@ def render_text(text, x, y, color):
     glBindTexture(GL_TEXTURE_2D, 0)
     glDisable(GL_TEXTURE_2D)
     glDisable(GL_BLEND)
-    
-def play_screamer_video():
-    # Extrae el audio del video y guárdalo como un archivo temporal
-    video = VideoFileClip('BOOGIE.mp4')
-    audio_path = 'boogie_audio.mp3'
-    video.audio.write_audiofile(audio_path)
 
-    # Inicializa Pygame Mixer para reproducir el audio
-    pygame.mixer.init()
-    pygame.mixer.music.load(audio_path)
-    pygame.mixer.music.play()
+videoEnding = ''
+def play_ending_video():
+    try:
+        # Extract audio from the video and save it as a temporary file
+        video = VideoFileClip(videoEnding)
+        audio_path = 'ending_audio.mp3'
 
-    # Libera la pantalla de Pygame para OpenCV
-    pygame.display.quit()
+        # Ensure the file does not already exist
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
 
-    # Configura la captura de video
-    cap = cv2.VideoCapture('BOOGIE.mp4')
+        video.audio.write_audiofile(audio_path)
 
-    if not cap.isOpened():
-        print("Error: Could not open video.")
-        return
+        # Initialize Pygame Mixer to play the audio
+        pygame.mixer.init()
+        pygame.mixer.music.load(audio_path)
+        pygame.mixer.music.play()
 
-    cv2.namedWindow('Screamer', cv2.WND_PROP_FULLSCREEN)
-    cv2.setWindowProperty('Screamer', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        # Free the Pygame screen for OpenCV
+        pygame.display.quit()
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
+        # Configure the video capture
+        cap = cv2.VideoCapture(videoEnding)
 
-        cv2.imshow('Screamer', frame)
+        if not cap.isOpened():
+            print("Error: Could not open video.")
+            return
 
-        if cv2.waitKey(25) & 0xFF == ord('q'):
-            break
+        cv2.namedWindow('Screamer', cv2.WND_PROP_FULLSCREEN)
+        cv2.setWindowProperty('Screamer', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
-    cap.release()
-    cv2.destroyAllWindows()
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
 
-    # Detiene la música
-    pygame.mixer.music.stop()
+            cv2.imshow('Screamer', frame)
 
-    # Reinitia Pygame display
-    pygame.display.init()
-    screen = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
-    pygame.display.set_caption("Chase: Take A Chance")
-    Init()  # Reinicia el contexto de OpenGL
+            if cv2.waitKey(25) & 0xFF == ord('q'):
+                break
+
+        cap.release()
+        cv2.destroyAllWindows()
+
+        # Stop the music
+        pygame.mixer.music.stop()
+        pygame.mixer.quit()
+
+        # Reinitialize Pygame display
+        pygame.display.init()
+        screen = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
+        pygame.display.set_caption("Chase: Take A Chance")
+        Init()  # Reinitialize the OpenGL context
+
+        # Remove the audio file to free up resources
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+
+    except OSError as e:
+        print(f"OSError: {e}")
+    except Exception as e:
+        print(f"Error: {e}")
 
 done = False
 Init()
