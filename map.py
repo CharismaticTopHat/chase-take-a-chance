@@ -60,6 +60,7 @@ GLUT_BITMAP_TIMES_ROMAN_24 = ctypes.c_int(7)
 
 pygame.init()
 
+
 def load_texture(filename):
     texture_surface = pygame.image.load(filename)
     texture_data = pygame.image.tostring(texture_surface, "RGB", True)
@@ -75,6 +76,7 @@ def load_texture(filename):
     glBindTexture(GL_TEXTURE_2D, 0)  # Unbind the texture
     return texture_id
 
+
 def load_map(filename):
     map_data = []
     with open(filename, 'r') as file:
@@ -83,7 +85,9 @@ def load_map(filename):
             map_data.append([int(cell) for cell in row])
     return map_data
 
+
 map_data = load_map('map.csv')
+
 
 def Axis():
     glShadeModel(GL_FLAT)
@@ -105,6 +109,7 @@ def Axis():
     glEnd()
     glLineWidth(1.0)
 
+
 def Init():
     global wall_texture, spider_texture
     screen = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
@@ -125,6 +130,7 @@ def Init():
     wall_texture = load_texture("wall_texture.jpg")
     spider_texture = load_texture("spider_texture.jpg")  # Cargar la textura de la araña
 
+
 def lookAt():
     global dir
     global theta
@@ -132,9 +138,11 @@ def lookAt():
     dir[0] = math.cos(rad) * speed
     dir[2] = math.sin(rad) * speed
 
+
 enemyStart = (30, 30)
 enemyEnd = (400, 310)
 enemy_instance = Enemy(vel=1, Scale=0.5, start=enemyStart, end=enemyEnd)
+
 
 def displayobj():
     glEnable(GL_TEXTURE_2D)  # Activar texturas antes de renderizar la araña
@@ -148,33 +156,63 @@ def displayobj():
     glBindTexture(GL_TEXTURE_2D, 0)  # Unbind la textura
     glDisable(GL_TEXTURE_2D)  # Desactivar texturas después de renderizar la araña
 
+
 def checkCollision():
-    euclidesDistance = math.sqrt(math.pow(player_x - enemy_instance.Position[0], 2) + math.pow(0 - 0, 2) + math.pow(player_z - enemy_instance.Position[2], 2))
+    euclidesDistance = math.sqrt(math.pow(player_x - enemy_instance.Position[0], 2) + math.pow(0 - 0, 2) + math.pow(
+        player_z - enemy_instance.Position[2], 2))
     radioDistance = playerSize + enemy_instance.size
     if euclidesDistance < radioDistance:
         is_collision = True
     else:
         is_collision = False
 
+
 def prepare_wall_vertices(map_data):
     wall_height = 100
     vertices = []
-    for z, row in enumerate(map_data):
-        for x, cell in enumerate(row):
-            if cell == 0:  # Cambiar a 0 para indicar paredes
+    visited = set()
+
+    def add_quad(v):
+        vertices.append(v)
+
+    for z in range(len(map_data)):
+        for x in range(len(map_data[0])):
+            if map_data[z][x] == 0 and (x, z) not in visited:
+                # Encontrar el máximo ancho
+                max_width = 0
+                while x + max_width < len(map_data[0]) and map_data[z][x + max_width] == 0:
+                    max_width += 1
+
+                # Encontrar el máximo alto para este ancho
+                max_height = 0
+                while z + max_height < len(map_data) and all(
+                        map_data[z + max_height][x + w] == 0 for w in range(max_width)):
+                    max_height += 1
+
+                # Agregar los vértices de la pared fusionada
+                for i in range(max_height):
+                    for j in range(max_width):
+                        visited.add((x + j, z + i))
+
                 # Frente
-                vertices.append(((x, 0, z), (x + 1, 0, z), (x + 1, wall_height, z), (x, wall_height, z)))
+                add_quad(((x, 0, z), (x + max_width, 0, z), (x + max_width, wall_height, z), (x, wall_height, z)))
                 # Atrás
-                vertices.append(((x, 0, z + 1), (x + 1, 0, z + 1), (x + 1, wall_height, z + 1), (x, wall_height, z + 1)))
+                add_quad(((x, 0, z + max_height), (x + max_width, 0, z + max_height),
+                          (x + max_width, wall_height, z + max_height), (x, wall_height, z + max_height)))
                 # Izquierda
-                vertices.append(((x, 0, z), (x, 0, z + 1), (x, wall_height, z + 1), (x, wall_height, z)))
+                add_quad(((x, 0, z), (x, 0, z + max_height), (x, wall_height, z + max_height), (x, wall_height, z)))
                 # Derecha
-                vertices.append(((x + 1, 0, z), (x + 1, 0, z + 1), (x + 1, wall_height, z + 1), (x + 1, wall_height, z)))
+                add_quad(((x + max_width, 0, z), (x + max_width, 0, z + max_height),
+                          (x + max_width, wall_height, z + max_height), (x + max_width, wall_height, z)))
                 # Arriba
-                vertices.append(((x, wall_height, z), (x + 1, wall_height, z), (x + 1, wall_height, z + 1), (x, wall_height, z + 1)))
+                add_quad(((x, wall_height, z), (x + max_width, wall_height, z),
+                          (x + max_width, wall_height, z + max_height), (x, wall_height, z + max_height)))
+
     return vertices
 
+
 wall_vertices = prepare_wall_vertices(map_data)
+
 
 def draw_walls(vertices):
     glEnable(GL_TEXTURE_2D)
@@ -194,6 +232,7 @@ def draw_walls(vertices):
     glBindTexture(GL_TEXTURE_2D, 0)
     glDisable(GL_TEXTURE_2D)
 
+
 def is_collision(new_x, new_z):
     global playerSize
     min_x, max_x = int(new_x - playerSize), int(new_x + playerSize)
@@ -207,9 +246,12 @@ def is_collision(new_x, new_z):
                 return True
     return False
 
+
 def is_collision_with_enemy(player_x, player_z):
-    euclidean_distance = math.sqrt((player_x - enemy_instance.MassCenter[0]) ** 2 + (player_z - abs(enemy_instance.MassCenter[1])) ** 2)
+    euclidean_distance = math.sqrt(
+        (player_x - enemy_instance.MassCenter[0]) ** 2 + (player_z - abs(enemy_instance.MassCenter[1])) ** 2)
     return euclidean_distance < (playerSize + enemy_instance.size)
+
 
 def display():
     global collectedItems
@@ -245,6 +287,7 @@ def display():
         if collectedItems == 0:
             show_you_win_message()
 
+
 def is_collision_with_coins(player_x, player_z):
     global collectedItems
     global speed
@@ -256,6 +299,7 @@ def is_collision_with_coins(player_x, player_z):
             enemy_instance.vel += ligeres
             return True
     return False
+
 
 def show_you_win_message():
     glMatrixMode(GL_PROJECTION)
@@ -279,6 +323,7 @@ def show_you_win_message():
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
+
 def show_game_over_message():
     glMatrixMode(GL_PROJECTION)
     glPushMatrix()
@@ -300,6 +345,7 @@ def show_game_over_message():
     glLoadIdentity()
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
+
 
 done = False
 Init()
