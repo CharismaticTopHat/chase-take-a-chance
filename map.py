@@ -60,6 +60,21 @@ GLUT_BITMAP_TIMES_ROMAN_24 = ctypes.c_int(7)
 
 pygame.init()
 
+def load_texture(filename):
+    texture_surface = pygame.image.load(filename)
+    texture_data = pygame.image.tostring(texture_surface, "RGB", True)
+    width, height = texture_surface.get_size()
+
+    texture_id = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D, texture_id)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture_data)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+    glBindTexture(GL_TEXTURE_2D, 0)  # Unbind the texture
+    return texture_id
+
 def load_map(filename):
     map_data = []
     with open(filename, 'r') as file:
@@ -91,6 +106,7 @@ def Axis():
     glLineWidth(1.0)
 
 def Init():
+    global wall_texture
     screen = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
     pygame.display.set_caption("Chase: Take A Chance")
     glMatrixMode(GL_PROJECTION)
@@ -106,6 +122,7 @@ def Init():
     objetos[0].generate()
     for i in range(0, 3):
         objetos.append(OBJ("Coin.obj", swapyz=True))
+    wall_texture = load_texture("wall_texture.jpg")
 
 def lookAt():
     global dir
@@ -119,17 +136,17 @@ enemyEnd = (400, 310)
 enemy_instance = Enemy(vel=1, Scale=0.5, start=enemyStart, end=enemyEnd)
 
 def displayobj():
+    glDisable(GL_TEXTURE_2D)  # Desactivar texturas antes de renderizar la araña
     glPushMatrix()
-    # correcciones para dibujar el objeto en plano XZ
-    # esto depende de cada objeto
     glRotatef(-90.0, 1.0, 0.0, 0.0)
     glTranslatef(enemy_instance.Position[0], -enemy_instance.Position[1], enemy_instance.Position[2])
     glScale(0.5, 0.5, 0.5)
     objetos[0].render()
     glPopMatrix()
+    # No activar texturas aquí ya que solo queremos aplicarlas a las paredes
 
 def checkCollision():
-    euclidesDistance = math.sqrt(math.pow(player_x - enemy_instance.Position[0], 2) + math.pow(0 - 0, 2) + math.pow(player_z - enemy_instance.Position[2]))
+    euclidesDistance = math.sqrt(math.pow(player_x - enemy_instance.Position[0], 2) + math.pow(0 - 0, 2) + math.pow(player_z - enemy_instance.Position[2], 2))
     radioDistance = playerSize + enemy_instance.size
     if euclidesDistance < radioDistance:
         is_collision = True
@@ -137,33 +154,42 @@ def checkCollision():
         is_collision = False
 
 def prepare_wall_vertices(map_data):
-    wall_height = 1
+    wall_height = 100
     vertices = []
     for z, row in enumerate(map_data):
         for x, cell in enumerate(row):
             if cell == 0:  # Cambiar a 0 para indicar paredes
-                vertices.extend([
-                    # Frente
-                    (x, 0, z), (x + 1, 0, z), (x + 1, wall_height, z), (x, wall_height, z),
-                    # Atrás
-                    (x, 0, z + 1), (x + 1, 0, z + 1), (x + 1, wall_height, z + 1), (x, wall_height, z + 1),
-                    # Izquierda
-                    (x, 0, z), (x, 0, z + 1), (x, wall_height, z + 1), (x, wall_height, z),
-                    # Derecha
-                    (x + 1, 0, z), (x + 1, 0, z + 1), (x + 1, wall_height, z + 1), (x + 1, wall_height, z),
-                    # Arriba
-                    (x, wall_height, z), (x + 1, wall_height, z), (x + 1, wall_height, z + 1), (x, wall_height, z + 1),
-                ])
+                # Frente
+                vertices.append(((x, 0, z), (x + 1, 0, z), (x + 1, wall_height, z), (x, wall_height, z)))
+                # Atrás
+                vertices.append(((x, 0, z + 1), (x + 1, 0, z + 1), (x + 1, wall_height, z + 1), (x, wall_height, z + 1)))
+                # Izquierda
+                vertices.append(((x, 0, z), (x, 0, z + 1), (x, wall_height, z + 1), (x, wall_height, z)))
+                # Derecha
+                vertices.append(((x + 1, 0, z), (x + 1, 0, z + 1), (x + 1, wall_height, z + 1), (x + 1, wall_height, z)))
+                # Arriba
+                vertices.append(((x, wall_height, z), (x + 1, wall_height, z), (x + 1, wall_height, z + 1), (x, wall_height, z + 1)))
     return vertices
 
 wall_vertices = prepare_wall_vertices(map_data)
 
 def draw_walls(vertices):
+    glEnable(GL_TEXTURE_2D)
+    glBindTexture(GL_TEXTURE_2D, wall_texture)
     glColor3f(1.0, 1.0, 1.0)
     glBegin(GL_QUADS)
-    for vertex in vertices:
-        glVertex3f(*vertex)
+    for quad in vertices:
+        glTexCoord2f(0.0, 0.0)
+        glVertex3f(*quad[0])
+        glTexCoord2f(1.0, 0.0)
+        glVertex3f(*quad[1])
+        glTexCoord2f(1.0, 1.0)
+        glVertex3f(*quad[2])
+        glTexCoord2f(0.0, 1.0)
+        glVertex3f(*quad[3])
     glEnd()
+    glBindTexture(GL_TEXTURE_2D, 0)
+    glDisable(GL_TEXTURE_2D)
 
 def is_collision(new_x, new_z):
     global playerSize
@@ -198,9 +224,6 @@ def display():
     print(f"JUGADOR en z es: {player_z}")
     print(f"ENEMIGO en x es: {int(enemy_instance.Position[0])}")
     print(f"ENEMIGO en z es: {int(enemy_instance.Position[1])}")
-    #for i, coin in enumerate(coins):
-     #   print(f"COIN {i} en x es: {coin.MassCenter[0]}")
-      #  print(f"COIN {i} en z es: {coin.MassCenter[1]}")
     enemy_instance.update(new_end=(int(player_x), int(player_z)))
     displayobj()
 
