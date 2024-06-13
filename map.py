@@ -5,6 +5,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 import math
+import random
 import csv
 import cv2
 from moviepy.editor import VideoFileClip
@@ -102,6 +103,8 @@ def load_map(filename):
 
 map_data = load_map('map.csv')
 
+def numero_aleatorio():
+    return random.randint(1, 3)
 
 def Axis():
     glShadeModel(GL_FLAT)
@@ -302,7 +305,11 @@ def display():
             if collectedItems == 0:
                 edo_game = 2
     elif edo_game == 1 and not screamer_played:
-        videoEnding = 'BOOGIE.mp4'
+        num = numero_aleatorio()
+        if num == 2:
+            videoEnding = 'SCREAMER2.mp4'
+        else:
+            videoEnding = 'SCREAMER.mp4'
         play_ending_video()
         screamer_played = True
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
