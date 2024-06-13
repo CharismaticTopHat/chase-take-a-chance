@@ -3,20 +3,20 @@ from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
-
 import math
 import csv
+import cv2
+from moviepy.editor import VideoFileClip
 import ctypes
 import time
-
-# Import obj loader
+import sys
 from objloader import *
 from Enemy import Enemy
 from Collectable import Coin
 
 sys.path.append('..')
 
-screen_width = 800
+screen_width = 1000
 screen_height = 800
 FOVY = 60.0
 ZNEAR = 1.0
@@ -54,7 +54,7 @@ coin_locations = [[225, -227], [225, -327], [225, -427], [275, -227], [275, -327
 coins = [Coin(Scale=1.0, locations=coin_locations) for _ in range(3)]
 
 pesades = 3
-ligeres = 5
+ligeres = 2
 
 GLUT_BITMAP_TIMES_ROMAN_24 = ctypes.c_int(7)
 
@@ -308,15 +308,7 @@ def show_you_win_message():
     gluOrtho2D(0, screen_width, 0, screen_height)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    glColor3f(0.0, 1.0, 0.0)
-    glRasterPos2i(screen_width // 2 - 70, screen_height // 2)
-    message = "You win!"
-    x = screen_width // 2 - 70
-    y = screen_height // 2
-    for char in message:
-        glRasterPos2i(x, y)
-        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, ctypes.c_int(ord(char)))
-        x += glutBitmapWidth(GLUT_BITMAP_TIMES_ROMAN_24, ctypes.c_int(ord(char)))
+    render_text("You win!", screen_width // 2 - 70, screen_height // 2, (0, 255, 0))
     glPopMatrix()
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
@@ -331,21 +323,70 @@ def show_game_over_message():
     gluOrtho2D(0, screen_width, 0, screen_height)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    glColor3f(1.0, 0.0, 0.0)
-    glRasterPos2i(screen_width // 2 - 50, screen_height // 2)
-    message = "Game Over"
-    x = screen_width // 2 - 50
-    y = screen_height // 2
-    for char in message:
-        glRasterPos2i(x, y)
-        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, ctypes.c_int(ord(char)))
-        x += glutBitmapWidth(GLUT_BITMAP_TIMES_ROMAN_24, ctypes.c_int(ord(char)))
-    glPopMatrix()
+    render_text("Game Over", screen_width // 2 - 50, screen_height // 2, (255, 0, 0))
     glMatrixMode(GL_PROJECTION)
+    glPopMatrix()
     glLoadIdentity()
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
+    # Reproduce el screamer
+    play_screamer_video()
+
+
+def render_text(text, x, y, color):
+    font = pygame.font.SysFont("Arial", 36)
+    text_surface = font.render(text, True, color)
+    text_data = pygame.image.tostring(text_surface, "RGBA", True)
+    glWindowPos2i(x, y)
+    glDrawPixels(text_surface.get_width(), text_surface.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, text_data)
+
+
+def play_screamer_video():
+    # Extrae el audio del video y guárdalo como un archivo temporal
+    video = VideoFileClip('BOOGIE.mp4')
+    audio_path = 'boogie_audio.mp3'
+    video.audio.write_audiofile(audio_path)
+
+    # Inicializa Pygame Mixer para reproducir el audio
+    pygame.mixer.init()
+    pygame.mixer.music.load(audio_path)
+    pygame.mixer.music.play()
+
+    # Libera la pantalla de Pygame para OpenCV
+    pygame.display.quit()
+
+    # Configura la captura de video
+    cap = cv2.VideoCapture('BOOGIE.mp4')
+
+    if not cap.isOpened():
+        print("Error: Could not open video.")
+        return
+
+    cv2.namedWindow('Screamer', cv2.WND_PROP_FULLSCREEN)
+    cv2.setWindowProperty('Screamer', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        cv2.imshow('Screamer', frame)
+
+        if cv2.waitKey(25) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+    # Detiene la música
+    pygame.mixer.music.stop()
+
+    # Reinitia Pygame display
+    pygame.display.init()
+    screen = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
+    pygame.display.set_caption("Chase: Take A Chance")
+    Init()  # Reinicia el contexto de OpenGL
 
 done = False
 Init()
