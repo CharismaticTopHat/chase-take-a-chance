@@ -19,7 +19,7 @@ class Coin:
         if self.available_locations:
             self.Coordinates = random.choice(self.available_locations)
             self.available_locations.remove(self.Coordinates)  # Remove the chosen coordinates
-            self.Position = [self.Coordinates[0], self.Coordinates[1], 5]
+            self.Position = [self.Coordinates[0], self.Coordinates[1], 3]
             self.MassCenter = [self.Position[0], self.Position[1]]
             self.size = 6
         else:

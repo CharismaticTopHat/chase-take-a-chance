@@ -50,11 +50,22 @@ collectedItems = 3
 
 objetos = []
 
-coin_locations = [[225, -227], [225, -327], [225, -427], [275, -227], [275, -327], [275, -427]]
+coin_locations = [
+    [117, -27],
+    [260, -28],
+    [449, -315],
+    [251, -307],
+    [263, -532],
+    [130, -535],
+    [414, -543],
+    [165, -29],
+    [328, -301],
+    [254, -440]
+]
 coins = [Coin(Scale=1.0, locations=coin_locations) for _ in range(3)]
 
-pesades = 3
-ligeres = 2
+pesades = 1
+ligeres = 1
 
 GLUT_BITMAP_TIMES_ROMAN_24 = ctypes.c_int(7)
 
