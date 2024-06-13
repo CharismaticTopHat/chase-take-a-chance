@@ -1,3 +1,40 @@
+#Realizado por:
+#Abigail Pérez García
+#Alejandro Kong Montoya
+#Álvaro Alberto Cruz Jiménez
+#Rodrigo López Guerra
+
+# Las siguientes librerías deben ser instaladas para que el juego funcione correctamente:
+
+# Pygame: Es necesario para la gestión de gráficos, sonidos y eventos.
+# Instalación: pip install pygame
+
+# PyOpenGL: Proporciona acceso a las funciones de OpenGL para renderizado 3D.
+# Instalación: pip install PyOpenGL PyOpenGL_accelerate
+
+# Math: Librería estándar de Python para funciones matemáticas. No necesita instalación adicional.
+
+# Random: Librería estándar de Python para generar números aleatorios. No necesita instalación adicional.
+
+# CSV: Librería estándar de Python para manejar archivos CSV. No necesita instalación adicional.
+
+# OpenCV: Es necesario para manejar la captura y visualización de video.
+# Instalación: pip install opencv-python
+
+# MoviePy: Librería para editar videos y extraer audio.
+# Instalación: pip install moviepy
+
+# Ctypes: Librería estándar de Python para interactuar con bibliotecas C. No necesita instalación adicional.
+
+# Time: Librería estándar de Python para funciones de tiempo. No necesita instalación adicional.
+
+# Sys: Librería estándar de Python para manipular el entorno del intérprete. No necesita instalación adicional.
+
+# ObjLoader: Librería para cargar archivos OBJ. La implementación de esta librería debe estar disponible en el proyecto. No necesita instalación adicional si está incluido en el directorio del proyecto.
+
+# Enemy y Collectable: Clases personalizadas que deben estar disponibles en el proyecto. No necesitan instalación adicional si están incluidos en el directorio del proyecto.
+
+
 import os
 import pygame
 from pygame.locals import *
