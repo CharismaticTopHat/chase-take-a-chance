@@ -12,6 +12,9 @@
 # PyOpenGL: Proporciona acceso a las funciones de OpenGL para renderizado 3D.
 # Instalación: pip install PyOpenGL PyOpenGL_accelerate
 
+# PyGetWindow: Se utiliza para poder minimizar todas las pestañas para crear una mejor apariencia al juego
+# Instalación: pip install pygetwindow
+
 # Math: Librería estándar de Python para funciones matemáticas. No necesita instalación adicional.
 
 # Random: Librería estándar de Python para generar números aleatorios. No necesita instalación adicional.
@@ -51,6 +54,7 @@ import sys
 from objloader import *
 from Enemy import Enemy
 from Collectable import Coin
+import pygetwindow as gw  # Importar pygetwindow
 
 sys.path.append('..')
 
@@ -126,6 +130,15 @@ def load_texture(filename):
     glBindTexture(GL_TEXTURE_2D, 0)  # Unbind the texture
     return texture_id
 
+def minimize_all_windows():
+    pygame.display.init()
+    game_window_title = pygame.display.get_caption()[0]
+    windows = gw.getAllTitles()
+    for win in windows:
+        window = gw.getWindowsWithTitle(win)
+        if window and window[0].title != game_window_title:
+            window[0].minimize()
+
 def load_map(filename):
     map_data = []
     with open(filename, 'r') as file:
@@ -142,7 +155,7 @@ def numero_aleatorio():
 def segundo_aleatorio():
     segundos = [3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]
     return random.choice(segundos)
-
+""""
 def Axis():
     glShadeModel(GL_FLAT)
     glLineWidth(3.0)
@@ -162,6 +175,7 @@ def Axis():
     glVertex3f(0.0, 0.0, Z_MAX)
     glEnd()
     glLineWidth(1.0)
+"""
 
 screamer_played = False  # Variable para llevar el registro si el screamer ya ha sido reproducido
 
@@ -170,6 +184,7 @@ def set_music_volume(volume):
 
 def Init():
     global wall_texture, spider_texture
+    minimize_all_windows()
     pygame.mixer.init()
     pygame.mixer.music.load('background_music.mp3')
     set_music_volume(0.1)
@@ -192,8 +207,7 @@ def Init():
     spider_texture = load_texture("spider_texture.jpg")  # Cargar la textura de la araña
 
 def lookAt():
-    global dir
-    global theta
+    global dir, theta
     rad = math.radians(theta)
     dir[0] = math.cos(rad) * speed
     dir[2] = math.sin(rad) * speed
@@ -304,19 +318,21 @@ def is_collision_with_enemy(player_x, player_z):
         (player_x - enemy_instance.MassCenter[0]) ** 2 + (player_z - abs(enemy_instance.MassCenter[1])) ** 2)
     return euclidean_distance < (playerSize + enemy_instance.size)
 
+def draw_floor():
+    glColor3f(0.3, 0.3, 0.3)
+    glBegin(GL_QUADS)
+    glVertex3d(-DimBoard, 0, -DimBoard)
+    glVertex3d(-DimBoard, 0, DimBoard)
+    glVertex3d(DimBoard, 0, DimBoard)
+    glVertex3d(DimBoard, 0, -DimBoard)
+    glEnd()
 def display():
     global edo_game, screamer_played, videoEnding
     if edo_game == 0:
         global collectedItems
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        Axis()
-        glColor3f(0.3, 0.3, 0.3)
-        glBegin(GL_QUADS)
-        glVertex3d(-DimBoard, 0, -DimBoard)
-        glVertex3d(-DimBoard, 0, DimBoard)
-        glVertex3d(DimBoard, 0, DimBoard)
-        glVertex3d(DimBoard, 0, -DimBoard)
-        glEnd()
+        #Axis()
+        draw_floor()
         draw_walls(wall_vertices)
         print(f"JUGADOR en x es: {player_x}")
         print(f"JUGADOR en z es: {player_z}")
@@ -346,7 +362,7 @@ def display():
         pygame.time.wait(segundo_aleatorio())
         num = numero_aleatorio()
         if num == 2:
-            videoEnding = 'SCREAMER2.mp4'
+            videoEnding = 'SCREAMER.mp4'
         else:
             videoEnding = 'SCREAMER2.mp4'
         play_ending_video()
@@ -377,20 +393,32 @@ def handle_collision_with_enemy():
     # Detener la música de fondo
     pygame.mixer.music.stop()
 
-    # Alejar la araña un poco para que esté en el recuadro
-    enemy_instance.Position[0] += 10
-    enemy_instance.Position[2] += 10
-
-    # Voltear al jugador
-    global theta
-    theta += 180
+    # Calcular la dirección hacia la araña y ajustar la orientación del jugador
+    global player_x, player_z, theta, EYE_X, EYE_Z, CENTER_X, CENTER_Z, dir, theta
+    dx = enemy_instance.Position[0] - player_x
+    dz = enemy_instance.Position[2] - player_z
+    theta = math.degrees(math.atan2(dz, dx))
     lookAt()
 
-    # Actualizar la escena por 3 segundos
+    # Alejar al jugador un poco de la araña
+    distance_to_move_back = 40
+    player_x -= distance_to_move_back * math.cos(math.radians(theta))
+    player_z -= distance_to_move_back * math.sin(math.radians(theta))
+
+    # Actualizar la posición de la cámara para reflejar la nueva posición del jugador
+    EYE_X = player_x
+    EYE_Z = player_z
+    CENTER_X = EYE_X + dir[0]
+    CENTER_Z = EYE_Z + dir[2]
+    glLoadIdentity()
+    gluLookAt(EYE_X, EYE_Y, EYE_Z, CENTER_X, CENTER_Y, CENTER_Z, UP_X, UP_Y, UP_Z)
+
+    # Congelar la escena por 3 segundos
     end_time = time.time() + 3
     while time.time() < end_time:
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        Axis()
+        #Axis()
+        draw_floor()
         draw_walls(wall_vertices)
         displayobj()
         pygame.display.flip()
@@ -424,6 +452,7 @@ def show_you_win_message():
     glMatrixMode(GL_PROJECTION)
     glPopMatrix()  # Restaurar la matriz de proyección
     glMatrixMode(GL_MODELVIEW)
+
 
 def show_game_over_message():
     glMatrixMode(GL_PROJECTION)
