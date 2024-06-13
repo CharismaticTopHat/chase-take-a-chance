@@ -130,6 +130,9 @@ screamer_played = False  # Variable para llevar el registro si el screamer ya ha
 
 def Init():
     global wall_texture, spider_texture
+    pygame.mixer.init()
+    pygame.mixer.music.load('background_music.mp3')
+    pygame.mixer.music.play(-1)  # Reproduce la música en bucle
     pygame.display.set_caption("Chase: Take A Chance")
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
@@ -312,12 +315,18 @@ def display():
             videoEnding = 'SCREAMER.mp4'
         play_ending_video()
         screamer_played = True
+        pygame.mixer.init()
+        pygame.mixer.music.load('background_music.mp3')
+        pygame.mixer.music.play(-1)  # Reproduce la música en bucle
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         show_game_over_message()
     elif edo_game == 2 and not screamer_played:
         videoEnding = 'BOOGIE.mp4'
         play_ending_video()
         screamer_played = True
+        pygame.mixer.init()
+        pygame.mixer.music.load('background_music.mp3')
+        pygame.mixer.music.play(-1)  # Reproduce la música en bucle
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         show_you_win_message()
 
@@ -423,6 +432,9 @@ def render_text(text, x, y, color):
 videoEnding = ''
 def play_ending_video():
     try:
+        # Detener la música de fondo
+        pygame.mixer.music.stop()
+
         # Extract audio from the video and save it as a temporary file
         video = VideoFileClip(videoEnding)
         audio_path = 'ending_audio.mp3'
@@ -437,7 +449,6 @@ def play_ending_video():
         pygame.mixer.init()
         pygame.mixer.music.load(audio_path)
         pygame.mixer.music.play()
-
         # Free the Pygame screen for OpenCV
         pygame.display.quit()
 
