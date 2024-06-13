@@ -106,7 +106,7 @@ def Axis():
     glLineWidth(1.0)
 
 def Init():
-    global wall_texture
+    global wall_texture, spider_texture
     screen = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
     pygame.display.set_caption("Chase: Take A Chance")
     glMatrixMode(GL_PROJECTION)
@@ -123,6 +123,7 @@ def Init():
     for i in range(0, 3):
         objetos.append(OBJ("Coin.obj", swapyz=True))
     wall_texture = load_texture("wall_texture.jpg")
+    spider_texture = load_texture("spider_texture.jpg")  # Cargar la textura de la araña
 
 def lookAt():
     global dir
@@ -136,14 +137,16 @@ enemyEnd = (400, 310)
 enemy_instance = Enemy(vel=1, Scale=0.5, start=enemyStart, end=enemyEnd)
 
 def displayobj():
-    glDisable(GL_TEXTURE_2D)  # Desactivar texturas antes de renderizar la araña
+    glEnable(GL_TEXTURE_2D)  # Activar texturas antes de renderizar la araña
+    glBindTexture(GL_TEXTURE_2D, spider_texture)  # Bind la textura de la araña
     glPushMatrix()
     glRotatef(-90.0, 1.0, 0.0, 0.0)
     glTranslatef(enemy_instance.Position[0], -enemy_instance.Position[1], enemy_instance.Position[2])
     glScale(0.5, 0.5, 0.5)
     objetos[0].render()
     glPopMatrix()
-    # No activar texturas aquí ya que solo queremos aplicarlas a las paredes
+    glBindTexture(GL_TEXTURE_2D, 0)  # Unbind la textura
+    glDisable(GL_TEXTURE_2D)  # Desactivar texturas después de renderizar la araña
 
 def checkCollision():
     euclidesDistance = math.sqrt(math.pow(player_x - enemy_instance.Position[0], 2) + math.pow(0 - 0, 2) + math.pow(player_z - enemy_instance.Position[2], 2))
