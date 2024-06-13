@@ -59,6 +59,8 @@ ligeres = 2
 GLUT_BITMAP_TIMES_ROMAN_24 = ctypes.c_int(7)
 
 pygame.init()
+screen = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
+edo_game = 0
 
 
 def load_texture(filename):
@@ -112,7 +114,6 @@ def Axis():
 
 def Init():
     global wall_texture, spider_texture
-    screen = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
     pygame.display.set_caption("Chase: Take A Chance")
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
@@ -129,7 +130,6 @@ def Init():
         objetos.append(OBJ("Coin.obj", swapyz=True))
     wall_texture = load_texture("wall_texture.jpg")
     spider_texture = load_texture("spider_texture.jpg")  # Cargar la textura de la araña
-
 
 def lookAt():
     global dir
@@ -254,38 +254,46 @@ def is_collision_with_enemy(player_x, player_z):
 
 
 def display():
-    global collectedItems
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    Axis()
-    glColor3f(0.3, 0.3, 0.3)
-    glBegin(GL_QUADS)
-    glVertex3d(-DimBoard, 0, -DimBoard)
-    glVertex3d(-DimBoard, 0, DimBoard)
-    glVertex3d(DimBoard, 0, DimBoard)
-    glVertex3d(DimBoard, 0, -DimBoard)
-    glEnd()
-    draw_walls(wall_vertices)
-    print(f"JUGADOR en x es: {player_x}")
-    print(f"JUGADOR en z es: {player_z}")
-    print(f"ENEMIGO en x es: {int(enemy_instance.Position[0])}")
-    print(f"ENEMIGO en z es: {int(enemy_instance.Position[1])}")
-    enemy_instance.update(new_end=(int(player_x), int(player_z)))
-    displayobj()
+    global edo_game
+    if edo_game == 0:
+        global collectedItems
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        Axis()
+        glColor3f(0.3, 0.3, 0.3)
+        glBegin(GL_QUADS)
+        glVertex3d(-DimBoard, 0, -DimBoard)
+        glVertex3d(-DimBoard, 0, DimBoard)
+        glVertex3d(DimBoard, 0, DimBoard)
+        glVertex3d(DimBoard, 0, -DimBoard)
+        glEnd()
+        draw_walls(wall_vertices)
+        print(f"JUGADOR en x es: {player_x}")
+        print(f"JUGADOR en z es: {player_z}")
+        print(f"ENEMIGO en x es: {int(enemy_instance.Position[0])}")
+        print(f"ENEMIGO en z es: {int(enemy_instance.Position[1])}")
+        enemy_instance.update(new_end=(int(player_x), int(player_z)))
+        displayobj()
 
-    for i, coin in enumerate(coins):
-        glPushMatrix()
-        glRotatef(-90.0, 1.0, 0.0, 0.0)
-        glTranslatef(coin.Position[0], coin.Position[1], coin.Position[2])
-        glScale(0.5, 0.5, 0.5)
-        objetos[i + 1].render()
-        glPopMatrix()
+        for i, coin in enumerate(coins):
+            glPushMatrix()
+            glRotatef(-90.0, 1.0, 0.0, 0.0)
+            glTranslatef(coin.Position[0], coin.Position[1], coin.Position[2])
+            glScale(0.5, 0.5, 0.5)
+            objetos[i + 1].render()
+            glPopMatrix()
 
-    if is_collision_with_enemy(player_x, player_z):
+        if is_collision_with_enemy(player_x, player_z):
+            edo_game = 1
+        if is_collision_with_coins(player_x, player_z):
+            collectedItems -= 1
+            if collectedItems == 0:
+                edo_game = 2
+    elif edo_game == 1:
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         show_game_over_message()
-    if is_collision_with_coins(player_x, player_z):
-        collectedItems -= 1
-        if collectedItems == 0:
-            show_you_win_message()
+    elif edo_game == 2:
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        show_you_win_message()
 
 
 def is_collision_with_coins(player_x, player_z):
@@ -307,13 +315,16 @@ def show_you_win_message():
     glLoadIdentity()
     gluOrtho2D(0, screen_width, 0, screen_height)
     glMatrixMode(GL_MODELVIEW)
+    glPushMatrix()
     glLoadIdentity()
-    render_text("You win!", screen_width // 2 - 70, screen_height // 2, (0, 255, 0))
-    glPopMatrix()
+
+    glColor3f(1, 1, 1)  # Color rojo para "Game Over"
+    render_text("You win", screen_width // 2 - 100, screen_height // 2, (255, 0, 0))
+
+    glPopMatrix()  # Restaurar la matriz de modelo-vista
     glMatrixMode(GL_PROJECTION)
-    glLoadIdentity()
+    glPopMatrix()  # Restaurar la matriz de proyección
     glMatrixMode(GL_MODELVIEW)
-    glLoadIdentity()
 
 
 def show_game_over_message():
@@ -322,26 +333,67 @@ def show_game_over_message():
     glLoadIdentity()
     gluOrtho2D(0, screen_width, 0, screen_height)
     glMatrixMode(GL_MODELVIEW)
+    glPushMatrix()
     glLoadIdentity()
-    render_text("Game Over", screen_width // 2 - 50, screen_height // 2, (255, 0, 0))
+
+    glColor3f(1.0, 0.0, 0.0)  # Color rojo para "Game Over"
+    render_text("Game Over", screen_width // 2 - 100, screen_height // 2, (255, 0, 0))
+
+    glPopMatrix()  # Restaurar la matriz de modelo-vista
     glMatrixMode(GL_PROJECTION)
-    glPopMatrix()
-    glLoadIdentity()
+    glPopMatrix()  # Restaurar la matriz de proyección
     glMatrixMode(GL_MODELVIEW)
-    glLoadIdentity()
 
-    # Reproduce el screamer
-    play_screamer_video()
+def load_texture(filename):
+    texture_surface = pygame.image.load(filename)
+    texture_data = pygame.image.tostring(texture_surface, "RGB", True)
+    width, height = texture_surface.get_size()
 
+    texture_id = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D, texture_id)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture_data)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+    glBindTexture(GL_TEXTURE_2D, 0)  # Unbind the texture
+    return texture_id
 
 def render_text(text, x, y, color):
-    font = pygame.font.SysFont("Arial", 36)
-    text_surface = font.render(text, True, color)
-    text_data = pygame.image.tostring(text_surface, "RGBA", True)
-    glWindowPos2i(x, y)
-    glDrawPixels(text_surface.get_width(), text_surface.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, text_data)
+    font = pygame.font.Font(None, 36)  # Cargar una fuente (puedes ajustar el tamaño y el tipo de fuente)
+    text_surface = font.render(text, True, color)  # Renderizar el texto en una superficie de Pygame
+    text_data = pygame.image.tostring(text_surface, "RGBA", True)  # Convertir la superficie en datos de píxeles
 
+    glEnable(GL_BLEND)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
+    glEnable(GL_TEXTURE_2D)
+    texture_id = glGenTextures(1)
+    glBindTexture(GL_TEXTURE_2D, texture_id)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, text_surface.get_width(), text_surface.get_height(),
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, text_data)
+
+    glEnable(GL_TEXTURE_2D)
+    glColor3f(1.0, 1.0, 1.0)  # Color blanco para el texto
+    glBegin(GL_QUADS)
+    glTexCoord2f(0, 1)
+    glVertex2f(x, y)
+    glTexCoord2f(1, 1)
+    glVertex2f(x + text_surface.get_width(), y)
+    glTexCoord2f(1, 0)
+    glVertex2f(x + text_surface.get_width(), y + text_surface.get_height())
+    glTexCoord2f(0, 0)
+    glVertex2f(x, y + text_surface.get_height())
+    glEnd()
+
+    glBindTexture(GL_TEXTURE_2D, 0)
+    glDisable(GL_TEXTURE_2D)
+    glDisable(GL_BLEND)
+    
 def play_screamer_video():
     # Extrae el audio del video y guárdalo como un archivo temporal
     video = VideoFileClip('BOOGIE.mp4')
