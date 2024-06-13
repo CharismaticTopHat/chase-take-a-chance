@@ -40,7 +40,6 @@ import pygame
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from OpenGL.GLUT import *
 import math
 import random
 import csv
@@ -55,7 +54,7 @@ from Collectable import Coin
 
 sys.path.append('..')
 
-screen_width = 1000
+screen_width = 1800
 screen_height = 800
 FOVY = 60.0
 ZNEAR = 1.0
@@ -103,15 +102,14 @@ coin_locations = [
 ]
 coins = [Coin(Scale=1.0, locations=coin_locations) for _ in range(3)]
 
-pesades = 1
-ligeres = 1
+pesades = 3
+ligeres = 4
 
 GLUT_BITMAP_TIMES_ROMAN_24 = ctypes.c_int(7)
 
 pygame.init()
 screen = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
 edo_game = 0
-
 
 def load_texture(filename):
     texture_surface = pygame.image.load(filename)
@@ -128,7 +126,6 @@ def load_texture(filename):
     glBindTexture(GL_TEXTURE_2D, 0)  # Unbind the texture
     return texture_id
 
-
 def load_map(filename):
     map_data = []
     with open(filename, 'r') as file:
@@ -137,11 +134,14 @@ def load_map(filename):
             map_data.append([int(cell) for cell in row])
     return map_data
 
-
 map_data = load_map('map.csv')
 
 def numero_aleatorio():
     return random.randint(1, 3)
+
+def segundo_aleatorio():
+    segundos = [3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]
+    return random.choice(segundos)
 
 def Axis():
     glShadeModel(GL_FLAT)
@@ -165,10 +165,14 @@ def Axis():
 
 screamer_played = False  # Variable para llevar el registro si el screamer ya ha sido reproducido
 
+def set_music_volume(volume):
+    pygame.mixer.music.set_volume(volume)
+
 def Init():
     global wall_texture, spider_texture
     pygame.mixer.init()
     pygame.mixer.music.load('background_music.mp3')
+    set_music_volume(0.1)
     pygame.mixer.music.play(-1)  # Reproduce la música en bucle
     pygame.display.set_caption("Chase: Take A Chance")
     glMatrixMode(GL_PROJECTION)
@@ -194,11 +198,9 @@ def lookAt():
     dir[0] = math.cos(rad) * speed
     dir[2] = math.sin(rad) * speed
 
-
 enemyStart = (30, 30)
 enemyEnd = (400, 310)
 enemy_instance = Enemy(vel=1, Scale=0.5, start=enemyStart, end=enemyEnd)
-
 
 def displayobj():
     glEnable(GL_TEXTURE_2D)  # Activar texturas antes de renderizar la araña
@@ -212,16 +214,14 @@ def displayobj():
     glBindTexture(GL_TEXTURE_2D, 0)  # Unbind la textura
     glDisable(GL_TEXTURE_2D)  # Desactivar texturas después de renderizar la araña
 
-
 def checkCollision():
     euclidesDistance = math.sqrt(math.pow(player_x - enemy_instance.Position[0], 2) + math.pow(0 - 0, 2) + math.pow(
         player_z - enemy_instance.Position[2], 2))
     radioDistance = playerSize + enemy_instance.size
     if euclidesDistance < radioDistance:
-        is_collision = True
+        return True
     else:
-        is_collision = False
-
+        return False
 
 def prepare_wall_vertices(map_data):
     wall_height = 100
@@ -266,9 +266,7 @@ def prepare_wall_vertices(map_data):
 
     return vertices
 
-
 wall_vertices = prepare_wall_vertices(map_data)
-
 
 def draw_walls(vertices):
     glEnable(GL_TEXTURE_2D)
@@ -288,7 +286,6 @@ def draw_walls(vertices):
     glBindTexture(GL_TEXTURE_2D, 0)
     glDisable(GL_TEXTURE_2D)
 
-
 def is_collision(new_x, new_z):
     global playerSize
     min_x, max_x = int(new_x - playerSize), int(new_x + playerSize)
@@ -302,12 +299,10 @@ def is_collision(new_x, new_z):
                 return True
     return False
 
-
 def is_collision_with_enemy(player_x, player_z):
     euclidean_distance = math.sqrt(
         (player_x - enemy_instance.MassCenter[0]) ** 2 + (player_z - abs(enemy_instance.MassCenter[1])) ** 2)
     return euclidean_distance < (playerSize + enemy_instance.size)
-
 
 def display():
     global edo_game, screamer_played, videoEnding
@@ -340,20 +335,28 @@ def display():
 
         if is_collision_with_enemy(player_x, player_z):
             edo_game = 1
+            handle_collision_with_enemy()
         if is_collision_with_coins(player_x, player_z):
             collectedItems -= 1
             if collectedItems == 0:
                 edo_game = 2
+                play_ending_video()
     elif edo_game == 1 and not screamer_played:
+        pygame.display.quit()
+        pygame.time.wait(segundo_aleatorio())
         num = numero_aleatorio()
         if num == 2:
             videoEnding = 'SCREAMER2.mp4'
         else:
-            videoEnding = 'SCREAMER.mp4'
+            videoEnding = 'SCREAMER2.mp4'
         play_ending_video()
         screamer_played = True
+        pygame.display.init()
+        screen = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
+        Init()  # Reinitialize the OpenGL context
         pygame.mixer.init()
         pygame.mixer.music.load('background_music.mp3')
+        set_music_volume(0.1)
         pygame.mixer.music.play(-1)  # Reproduce la música en bucle
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         show_game_over_message()
@@ -361,12 +364,37 @@ def display():
         videoEnding = 'BOOGIE.mp4'
         play_ending_video()
         screamer_played = True
+        pygame.display.init()
+        screen = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
+        Init()  # Reinitialize the OpenGL context
         pygame.mixer.init()
         pygame.mixer.music.load('background_music.mp3')
         pygame.mixer.music.play(-1)  # Reproduce la música en bucle
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         show_you_win_message()
 
+def handle_collision_with_enemy():
+    # Detener la música de fondo
+    pygame.mixer.music.stop()
+
+    # Alejar la araña un poco para que esté en el recuadro
+    enemy_instance.Position[0] += 10
+    enemy_instance.Position[2] += 10
+
+    # Voltear al jugador
+    global theta
+    theta += 180
+    lookAt()
+
+    # Actualizar la escena por 3 segundos
+    end_time = time.time() + 3
+    while time.time() < end_time:
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        Axis()
+        draw_walls(wall_vertices)
+        displayobj()
+        pygame.display.flip()
+        pygame.time.wait(70)
 
 def is_collision_with_coins(player_x, player_z):
     global collectedItems
@@ -380,7 +408,6 @@ def is_collision_with_coins(player_x, player_z):
             return True
     return False
 
-
 def show_you_win_message():
     glMatrixMode(GL_PROJECTION)
     glPushMatrix()
@@ -391,13 +418,12 @@ def show_you_win_message():
     glLoadIdentity()
 
     glColor3f(1, 1, 1)  # Color rojo para "Game Over"
-    render_text("You win", screen_width // 2 - 100, screen_height // 2, (255, 0, 0))
+    render_text("You win?", screen_width // 2 - 100, screen_height // 2, (255, 0, 0))
 
     glPopMatrix()  # Restaurar la matriz de modelo-vista
     glMatrixMode(GL_PROJECTION)
     glPopMatrix()  # Restaurar la matriz de proyección
     glMatrixMode(GL_MODELVIEW)
-
 
 def show_game_over_message():
     glMatrixMode(GL_PROJECTION)
@@ -415,21 +441,6 @@ def show_game_over_message():
     glMatrixMode(GL_PROJECTION)
     glPopMatrix()  # Restaurar la matriz de proyección
     glMatrixMode(GL_MODELVIEW)
-
-def load_texture(filename):
-    texture_surface = pygame.image.load(filename)
-    texture_data = pygame.image.tostring(texture_surface, "RGB", True)
-    width, height = texture_surface.get_size()
-
-    texture_id = glGenTextures(1)
-    glBindTexture(GL_TEXTURE_2D, texture_id)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture_data)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-    glBindTexture(GL_TEXTURE_2D, 0)  # Unbind the texture
-    return texture_id
 
 def render_text(text, x, y, color):
     font = pygame.font.Font(None, 36)  # Cargar una fuente (puedes ajustar el tamaño y el tipo de fuente)
@@ -471,6 +482,9 @@ def play_ending_video():
     try:
         # Detener la música de fondo
         pygame.mixer.music.stop()
+
+        if edo_game == 1:
+            set_music_volume(2.0)
 
         # Extract audio from the video and save it as a temporary file
         video = VideoFileClip(videoEnding)
@@ -516,12 +530,6 @@ def play_ending_video():
         pygame.mixer.music.stop()
         pygame.mixer.quit()
 
-        # Reinitialize Pygame display
-        pygame.display.init()
-        screen = pygame.display.set_mode((screen_width, screen_height), DOUBLEBUF | OPENGL)
-        pygame.display.set_caption("Chase: Take A Chance")
-        Init()  # Reinitialize the OpenGL context
-
         # Remove the audio file to free up resources
         if os.path.exists(audio_path):
             os.remove(audio_path)
@@ -565,6 +573,6 @@ while not done:
 
     display()
     pygame.display.flip()
-    pygame.time.wait(10)
+    pygame.time.wait(70)
 
 pygame.quit()
